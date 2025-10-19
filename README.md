@@ -1,9 +1,13 @@
-# blurshell - A QuickShell Config
+# blurshell
 
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 [![Version](https://img.shields.io/badge/version-0.1.0-brightgreen.svg)](https://github.com/Hashtaxx/blurshell)
 [![QuickShell](https://img.shields.io/badge/QuickShell-widget%20system-orange.svg)](https://quickshell.outfoxxed.me)
 [![Hyprland](https://img.shields.io/badge/Hyprland-wayland%20compositor-blue.svg)](https://hyprland.org)
+
+
+https://github.com/user-attachments/assets/77173184-023a-4a05-9790-f767839d06a9
+
 
 **Version:** 0.1.0
 
@@ -350,7 +354,7 @@ For GTK apps, use a transparent theme or manually edit the CSS files (e.g., `~/.
 
 Feel free to open a feature request if there's something missing!
 
-## 🙏 Credits & Inspiration
+## 💡 Credits & Inspiration
 
 - [@outfoxxed](https://github.com/outfoxxed) for creating QuickShell
 - [@end-4](https://github.com/end-4) for [dots-hyprland](https://github.com/end-4/dots-hyprland) - invaluable learning resource
