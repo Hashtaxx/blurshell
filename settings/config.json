@@ -1,0 +1,65 @@
+{
+    "audioIncrement": 2,
+    "autoRotateEnabled": true,
+    "autoRotateInterval": 1800000,
+    "barHeight": 28,
+    "clipHistAccent": "mauve",
+    "clipHistBackground": "mantle",
+    "clipHistWidth": 0,
+    "controlCenterAccent": "sky",
+    "controlCenterBackground": "crust",
+    "controlCenterWidth": 0,
+    "defaultExpireTimeout": 5000,
+    "drawerMargins": 28,
+    "excludedExtensions": [
+        ".log",
+        ".tmp",
+        ".cache",
+        ".ini",
+        ".pid",
+        ".lock",
+        ".sock"
+    ],
+    "fileSearchPath": "~",
+    "gapsIn": 8,
+    "gapsOut": 12,
+    "includeHiddenFiles": false,
+    "launcherAccent": "lavender",
+    "launcherBackground": "mantle",
+    "launcherWidth": 0,
+    "lockOnStartup": true,
+    "lockscreenDimming": 0.4,
+    "mainMonitorId": "DP-1",
+    "pauseAutoRotateOnManual": false,
+    "settingsHeight": 44,
+    "showSplashOnLockscreen": true,
+    "showSplashOnWallpaper": false,
+    "showVolumeBarAlways": false,
+    "theme": "CatppuccinMocha",
+    "transparency": 0.76,
+    "useDebounceTimer": false,
+    "useWallpaperDirectory": true,
+    "wallpaperDirectory": "~/.config/quickshell/assets/wallpapers",
+    "wallpaperPath": "~/.config/quickshell/assets/wallpapers/AdobeStock_314157553.jpeg",
+    "windowRounding": 12,
+    "workspaceRules": {
+        "DP-1": [
+            5,
+            6,
+            7,
+            8
+        ],
+        "DP-3": [
+            9,
+            10,
+            11,
+            12
+        ],
+        "HDMI-A-1": [
+            1,
+            2,
+            3,
+            4
+        ]
+    }
+}
