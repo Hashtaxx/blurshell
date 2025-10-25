@@ -5,6 +5,7 @@ import Qt.labs.folderlistmodel
 import Quickshell
 import Quickshell.Io
 import qs.settings
+import qs.services
 
 Singleton {
     id: root
@@ -27,8 +28,7 @@ Singleton {
     readonly property int queueLength: wallpaperQueue.length
     
     // ========== Screen Coordination Properties ==========
-    property var readyScreens: ({})  // Object to track which screens are ready
-    property int expectedScreenCount: 0
+    property var readyScreens: ({})
     property string pendingWallpaperPath: ""
 
     // ========== Signals ==========
@@ -66,11 +66,19 @@ Singleton {
         }
     }
 
+    // ========== Screen Geometry Recalculation ==========
+    function recalculateScreenGeometry() {
+        ScreenGeometry.recalculate();
+    }
+
     // ========== Public Methods ==========
     function nextWallpaper(manualTrigger = false) {
         if (!useWallpaperDirectory) {
             return;
         }
+
+        // Recalculate screen geometry before wallpaper change (handles suspend/resume, hot-plug events)
+        recalculateScreenGeometry();
 
         if (isTransitioning) {
             return;
@@ -121,6 +129,9 @@ Singleton {
             return;
         }
 
+        // Recalculate screen geometry before wallpaper change (handles suspend/resume, hot-plug events)
+        recalculateScreenGeometry();
+
         if (isTransitioning) {
             return;
         }
@@ -167,6 +178,8 @@ Singleton {
             return;
         }
         
+        // Recalculate screen geometry before wallpaper change (handles suspend/resume, hot-plug events)
+        recalculateScreenGeometry();
         // Find index in current queue
         var idx = wallpaperQueue.indexOf(path);
         
@@ -194,22 +207,22 @@ Singleton {
     }
     
     // ========== Screen Coordination Methods ==========
-    function registerScreen(screenName) {
-        expectedScreenCount++;
-    }
-    
     function reportScreenReady(screenName) {
         readyScreens[screenName] = true;
         
-        // Check if all screens are ready
+        // Calculate current expected screen count from active screens
+        var currentScreenCount = Quickshell.screens.length;
+        
+        // Check how many active screens are ready
         var readyCount = 0;
-        for (var screen in readyScreens) {
-            if (readyScreens[screen]) {
+        for (let screen of Quickshell.screens) {
+            if (readyScreens[screen.name]) {
                 readyCount++;
             }
         }
         
-        if (readyCount === expectedScreenCount) {
+        // All active screens are ready
+        if (readyCount === currentScreenCount && currentScreenCount > 0) {
             allScreensReady();
             readyScreens = {}; // Reset for next transition
             

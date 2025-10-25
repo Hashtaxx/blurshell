@@ -19,41 +19,35 @@ Item {
     id: root
     
     // ============ REQUIRED PROPERTIES ============
-    required property real totalDesktopWidth
-    required property real totalDesktopHeight
     required property real screenX
     required property real screenY
     required property real screenWidth
     required property real screenHeight
     
     // ============ OPTIONAL PROPERTIES ============
-    property real sourceImageWidth: 0
-    property real sourceImageHeight: 0
     property int blurRadius: 64
     property bool showBlur: true
     property real darkenOpacity: 0.3
     
-    // ============ COMPUTED PROPERTIES ============
-    // Resolved source dimensions (use provided values or fallback to loaded image size)
-    readonly property real actualSourceWidth: sourceImageWidth > 0 ? sourceImageWidth : wallpaperImage.sourceSize.width
-    readonly property real actualSourceHeight: sourceImageHeight > 0 ? sourceImageHeight : wallpaperImage.sourceSize.height
+    // ============ POSITIONING ============
+    // Calculate positioning using the centralized ScreenGeometry service
+    property var imagePosition: calculatePosition()
     
-    // Scale factors to cover total desktop
-    readonly property real scaleX: actualSourceWidth > 0 ? totalDesktopWidth / actualSourceWidth : 1.0
-    readonly property real scaleY: actualSourceHeight > 0 ? totalDesktopHeight / actualSourceHeight : 1.0
-    readonly property real wallpaperScale: Math.max(scaleX, scaleY)
+    function calculatePosition() {
+        if (wallpaperImage.status === Image.Ready && wallpaperImage.sourceSize.width > 0) {
+            return ScreenGeometry.calculateScreenPositioning(
+                wallpaperImage.sourceSize.width,
+                wallpaperImage.sourceSize.height,
+                screenX,
+                screenY
+            );
+        }
+        return { scale: 1, x: 0, y: 0, scaledWidth: 0, scaledHeight: 0 };
+    }
     
-    // Scaled dimensions after applying cover scale
-    readonly property real wallpaperScaledWidth: actualSourceWidth * wallpaperScale
-    readonly property real wallpaperScaledHeight: actualSourceHeight * wallpaperScale
-    
-    // Centering offset for scaled wallpaper within total desktop
-    readonly property real imageOffsetX: (totalDesktopWidth - wallpaperScaledWidth) / 2
-    readonly property real imageOffsetY: (totalDesktopHeight - wallpaperScaledHeight) / 2
-    
-    // Position within this monitor's viewport
-    readonly property real wallpaperX: -(screenX - imageOffsetX)
-    readonly property real wallpaperY: -(screenY - imageOffsetY)
+    // Recalculate when screen position changes
+    onScreenXChanged: { if (wallpaperImage.status === Image.Ready) imagePosition = calculatePosition(); }
+    onScreenYChanged: { if (wallpaperImage.status === Image.Ready) imagePosition = calculatePosition(); }
     
     // ============ WALLPAPER SOURCE ============
     readonly property string wallpaperUrl: WallpaperService.currentWallpaperPath ? "file://" + WallpaperService.currentWallpaperPath : ""
@@ -65,10 +59,10 @@ Item {
     // Visibility and rendering mode controlled by showBlur property.
     Image {
         id: wallpaperImage
-        x: root.wallpaperX
-        y: root.wallpaperY
-        width: root.wallpaperScaledWidth
-        height: root.wallpaperScaledHeight
+        x: root.imagePosition.x
+        y: root.imagePosition.y
+        width: root.imagePosition.scaledWidth
+        height: root.imagePosition.scaledHeight
         
         source: root.wallpaperUrl
         fillMode: Image.Stretch
@@ -77,16 +71,23 @@ Item {
         cache: true
         asynchronous: false  // Keep synchronous to avoid flicker on lock screen
         visible: !root.showBlur
+        
+        // Recalculate position when image loads
+        onStatusChanged: {
+            if (status === Image.Ready) {
+                root.imagePosition = root.calculatePosition();
+            }
+        }
     }
     
     // ============ BLUR EFFECT ============
     // FastBlur effect using the single wallpaper image as source.
     // Only visible when showBlur is enabled.
     FastBlur {
-        x: root.wallpaperX
-        y: root.wallpaperY
-        width: root.wallpaperScaledWidth
-        height: root.wallpaperScaledHeight
+        x: root.imagePosition.x
+        y: root.imagePosition.y
+        width: root.imagePosition.scaledWidth
+        height: root.imagePosition.scaledHeight
         radius: root.blurRadius
         visible: root.showBlur
         
@@ -102,5 +103,32 @@ Item {
         anchors.fill: parent
         color: "black"
         opacity: root.darkenOpacity
+    }
+    
+    // ============ REACTIVE UPDATES ============
+    // Recalculate positioning when desktop geometry changes
+    Connections {
+        target: ScreenGeometry
+        
+        function onTotalDesktopWidthChanged() {
+            if (wallpaperImage.status === Image.Ready) {
+                root.imagePosition = root.calculatePosition();
+            }
+        }
+        
+        function onTotalDesktopHeightChanged() {
+            if (wallpaperImage.status === Image.Ready) {
+                root.imagePosition = root.calculatePosition();
+            }
+        }
+    }
+    
+    // Recalculate when wallpaper changes
+    Connections {
+        target: WallpaperService
+        
+        function onWallpaperChanged() {
+            // Image will recalculate on statusChanged when new image loads
+        }
     }
 }

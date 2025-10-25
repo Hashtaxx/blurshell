@@ -60,8 +60,6 @@ ShellRoot {
                 // Blurred wallpaper using the reusable component
                 BlurredWallpaper {
                     anchors.fill: parent
-                    totalDesktopWidth: WallpaperSize.totalDesktopWidth
-                    totalDesktopHeight: WallpaperSize.totalDesktopHeight
                     screenX: overlayWindow.screenGeom.x
                     screenY: overlayWindow.screenGeom.y
                     screenWidth: overlayWindow.screenGeom.width

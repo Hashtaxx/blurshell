@@ -39,8 +39,6 @@ Item {
     // Stretched and blurred wallpaper with darkening overlay for all monitors
     BlurredWallpaper {
         anchors.fill: parent
-        totalDesktopWidth: WallpaperSize.totalDesktopWidth
-        totalDesktopHeight: WallpaperSize.totalDesktopHeight
         screenX: root.screenGeom.x
         screenY: root.screenGeom.y
         screenWidth: root.screenGeom.width

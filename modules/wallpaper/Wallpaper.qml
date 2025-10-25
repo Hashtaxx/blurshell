@@ -54,11 +54,8 @@ Scope {
                 right: true
             }
 
-            // Initialize Wayland layer configuration and register screen with service
+            // Initialize Wayland layer configuration
             Component.onCompleted: {
-                // Notify service that this screen is ready for wallpaper updates
-                WallpaperService.registerScreen(modelData.name);
-
                 // Configure Wayland layer shell for background rendering: place below all other windows
                 if (WlrLayershell != null) {
                     WlrLayershell.layer = WlrLayer.Background;
@@ -71,78 +68,42 @@ Scope {
                 }
             }
 
-            // Virtual desktop dimensions for multi-monitor coordinate system (cached)
-            property real totalDesktopWidth: WallpaperSize.totalDesktopWidth
-            property real totalDesktopHeight: WallpaperSize.totalDesktopHeight
-            
-            // Current screen coordinates and dimensions (cached from ScreenGeometry service)
+            // Current screen geometry (fetched from service, updates reactively)
             property var screenGeom: ScreenGeometry.getGeometry(modelData.name)
-            property real screenX: screenGeom.x
-            property real screenY: screenGeom.y
-            property real screenWidth: screenGeom.width
-            property real screenHeight: screenGeom.height
 
             // Cross-fade layer toggle: when true, image1 is shown; when false, image2 is shown
             property bool useFirstImage: true
 
-            // Current wallpaper path from service
-            property string currentWallpaper: WallpaperService.currentWallpaperPath
-
-            // Image1 positioning: scale and coordinates (primary display layer during fade-out)
-            property real image1Scale: 1.0
-            property real image1ScaledWidth: 0
-            property real image1ScaledHeight: 0
-            property real image1X: 0
-            property real image1Y: 0
-
-            // Image2 positioning: scale and coordinates (secondary display layer during fade-in)
-            property real image2Scale: 1.0
-            property real image2ScaledWidth: 0
-            property real image2ScaledHeight: 0
-            property real image2X: 0
-            property real image2Y: 0
+            // Image positioning stored as objects to reduce property overhead
+            property var image1Position: ({ scale: 1.0, x: 0, y: 0, width: 0, height: 0 })
+            property var image2Position: ({ scale: 1.0, x: 0, y: 0, width: 0, height: 0 })
 
             // Cross-fade state machine: tracks which image is loading and when to trigger transition
             property bool waitingForImageLoad: false
             property bool targetIsImage2: false
 
-            // Calculate image positioning for virtual desktop coordinate system: scales and positions
-            // image to cover entire desktop, accounting for multi-monitor layout and screen offset
-            function calculatePositioning(sourceWidth, sourceHeight, isImage1) {
-                if (sourceWidth <= 0 || sourceHeight <= 0) return;
+            // Calculate positioning for an image
+            function calculatePosition(sourceWidth, sourceHeight) {
+                return ScreenGeometry.calculateScreenPositioning(
+                    sourceWidth, 
+                    sourceHeight, 
+                    screenGeom.x, 
+                    screenGeom.y
+                );
+            }
 
-                // Calculate scale to cover entire desktop
-                var scaleX = totalDesktopWidth / sourceWidth;
-                var scaleY = totalDesktopHeight / sourceHeight;
-                var scale = Math.max(scaleX, scaleY);
-
-                // Calculate scaled dimensions
-                var scaledWidth = sourceWidth * scale;
-                var scaledHeight = sourceHeight * scale;
-
-                // Calculate offset to center on virtual desktop
-                var imageOffsetX = (totalDesktopWidth - scaledWidth) / 2;
-                var imageOffsetY = (totalDesktopHeight - scaledHeight) / 2;
-
-                // Calculate final position for this screen
-                var finalX = -(screenX - imageOffsetX);
-                var finalY = -(screenY - imageOffsetY);
-
-                // Update the appropriate image's properties
-                if (isImage1) {
-                    image1Scale = scale;
-                    image1ScaledWidth = scaledWidth;
-                    image1ScaledHeight = scaledHeight;
-                    image1X = finalX;
-                    image1Y = finalY;
-                } else {
-                    image2Scale = scale;
-                    image2ScaledWidth = scaledWidth;
-                    image2ScaledHeight = scaledHeight;
-                    image2X = finalX;
-                    image2Y = finalY;
+            // Recalculate positioning when screen geometry or images change
+            function recalculatePositions() {
+                if (image1.status === Image.Ready && image1.source !== "") {
+                    image1Position = calculatePosition(image1.sourceSize.width, image1.sourceSize.height);
+                }
+                if (image2.status === Image.Ready && image2.source !== "") {
+                    image2Position = calculatePosition(image2.sourceSize.width, image2.sourceSize.height);
                 }
             }
+
+            // React to screen geometry changes
+            onScreenGeomChanged: recalculatePositions()
 
             // Background container with two image layers for cross-fade effect
             Rectangle {
@@ -153,10 +114,10 @@ Scope {
                 Image {
                     id: image1
                     source: ""
-                    width: wallpaperWindow.image1ScaledWidth
-                    height: wallpaperWindow.image1ScaledHeight
-                    x: wallpaperWindow.image1X
-                    y: wallpaperWindow.image1Y
+                    width: wallpaperWindow.image1Position.scaledWidth
+                    height: wallpaperWindow.image1Position.scaledHeight
+                    x: wallpaperWindow.image1Position.x
+                    y: wallpaperWindow.image1Position.y
 
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
@@ -177,7 +138,7 @@ Scope {
                     // Calculate positioning once image dimensions are known
                     onStatusChanged: {
                         if (status === Image.Ready) {
-                            wallpaperWindow.calculatePositioning(sourceSize.width, sourceSize.height, true);
+                            wallpaperWindow.image1Position = wallpaperWindow.calculatePosition(sourceSize.width, sourceSize.height);
                         }
                     }
                 }
@@ -186,10 +147,10 @@ Scope {
                 Image {
                     id: image2
                     source: ""
-                    width: wallpaperWindow.image2ScaledWidth
-                    height: wallpaperWindow.image2ScaledHeight
-                    x: wallpaperWindow.image2X
-                    y: wallpaperWindow.image2Y
+                    width: wallpaperWindow.image2Position.scaledWidth
+                    height: wallpaperWindow.image2Position.scaledHeight
+                    x: wallpaperWindow.image2Position.x
+                    y: wallpaperWindow.image2Position.y
 
                     fillMode: Image.PreserveAspectCrop
                     smooth: true
@@ -209,7 +170,7 @@ Scope {
 
                     onStatusChanged: {
                         if (status === Image.Ready) {
-                            wallpaperWindow.calculatePositioning(sourceSize.width, sourceSize.height, false);
+                            wallpaperWindow.image2Position = wallpaperWindow.calculatePosition(sourceSize.width, sourceSize.height);
                         }
                     }
                 }
@@ -276,6 +237,29 @@ Scope {
                 function onAllScreensReady() {
                     // Perform the synchronized transition: toggle useFirstImage to trigger all screens' Behaviors
                     wallpaperWindow.useFirstImage = !wallpaperWindow.targetIsImage2;
+                }
+            }
+
+            // Recalculate positioning when screen geometry changes
+            Connections {
+                target: ScreenGeometry
+
+                function onScreenGeometriesChanged() {
+                    wallpaperWindow.screenGeom = ScreenGeometry.getGeometry(wallpaperWindow.modelData.name);
+                    wallpaperWindow.recalculatePositions();
+                }
+            }
+
+            // Recalculate positioning when desktop dimensions change (e.g., multi-monitor configuration)
+            Connections {
+                target: ScreenGeometry
+
+                function onTotalDesktopWidthChanged() {
+                    wallpaperWindow.recalculatePositions();
+                }
+
+                function onTotalDesktopHeightChanged() {
+                    wallpaperWindow.recalculatePositions();
                 }
             }
         }

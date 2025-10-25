@@ -17,6 +17,9 @@ Singleton {
     readonly property HyprlandWorkspace focusedWorkspace: Hyprland.focusedWorkspace
     readonly property int activeWsId: focusedWorkspace?.id ?? 1
 
+    // Emitted when monitors are added/removed
+    signal monitorConfigChanged(string eventName)
+
 
     // Initialize on component creation
     Component.onCompleted: {
@@ -158,6 +161,10 @@ Singleton {
             else if (n.includes("window") || n.includes("group") || ["pin", "fullscreen", "changefloatingmode", "minimize"].includes(n)) {
             Hyprland.refreshToplevels();
             } 
+            // Monitor configuration changed (hot-plug/unplug or suspend/resume)
+            else if (n === "monitoradded" || n === "monitorremoved") {
+                root.monitorConfigChanged(n);
+            }
             else if (n === "configreloaded") {
                 // When Hyprland config is reloaded, workspace rules may have changed
                 console.log("Hyprland config reloaded, refreshing workspace rules and reloading components...");

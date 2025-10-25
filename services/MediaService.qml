@@ -51,7 +51,7 @@ Singleton {
         running: root.isPlaying && root.activePlayer?.positionSupported || false
 
         onTriggered: {
-            if (root.activePlayer) {
+            if (root.activePlayer && root.activePlayer.valid) {
                 root.displayPosition = root.activePlayer.position;
             }
         }
@@ -59,7 +59,7 @@ Singleton {
 
     // Update displayPosition when track changes or player changes
     onActivePlayerChanged: {
-        if (activePlayer) {
+        if (activePlayer && activePlayer.valid) {
             displayPosition = activePlayer.position;
             displayLength = activePlayer.length;
         }
@@ -68,22 +68,23 @@ Singleton {
     // Connect to track changes
     Connections {
         target: root.activePlayer
+        enabled: root.activePlayer?.valid ?? false
 
         function onTrackChanged() {
-            if (root.activePlayer) {
+            if (root.activePlayer && root.activePlayer.valid) {
                 root.displayPosition = root.activePlayer.position;
                 root.displayLength = root.activePlayer.length;
             }
         }
 
         function onPositionChanged() {
-            if (root.activePlayer) {
+            if (root.activePlayer && root.activePlayer.valid) {
                 root.displayPosition = root.activePlayer.position;
             }
         }
 
         function onLengthChanged() {
-            if (root.activePlayer) {
+            if (root.activePlayer && root.activePlayer.valid) {
                 root.displayLength = root.activePlayer.length;
             }
         }

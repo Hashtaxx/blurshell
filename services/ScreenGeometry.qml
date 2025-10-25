@@ -1,36 +1,26 @@
 pragma Singleton
 import QtQuick
 import Quickshell
+import qs.services
 
-/**
- * ScreenGeometry Service
- * 
- * Caches screen geometry (position and dimensions) for all connected monitors.
- * Calculates once on startup and recalculates when screens change (hot-plug events).
- * 
- * This avoids creating reactive property bindings in every PanelWindow instance,
- * significantly reducing overhead when multiple windows reference the same screen data.
- * 
- * Usage:
- *   const geom = ScreenGeometry.getGeometry(screenName);
- *   property real screenX: geom.x
- *   property real screenY: geom.y
- *   property real screenWidth: geom.width
- *   property real screenHeight: geom.height
- */
 Singleton {
     id: root
     
-    // Cache of screen geometries indexed by screen name
-    // Structure: { "screenName": { x, y, width, height, name } }
     property var screenGeometries: ({})
     
-    /**
-     * Recalculate and cache geometry for all connected screens.
-     * Called on startup and whenever screens change.
-     */
+    // Total desktop dimensions (merged from WallpaperSize)
+    property int totalDesktopWidth: 0
+    property int totalDesktopHeight: 0
+    property int desktopMinX: 0
+    property int desktopMinY: 0
+    
     function recalculate() {
         var geometries = {};
+        var firstScreen = true;
+        var minX = 0;
+        var maxX = 0;
+        var minY = 0;
+        var maxY = 0;
         
         for (let screen of Quickshell.screens) {
             geometries[screen.name] = {
@@ -40,19 +30,34 @@ Singleton {
                 height: screen.height,
                 name: screen.name
             };
+            
+            // Calculate total desktop bounds
+            var left = screen.x;
+            var right = screen.x + screen.width;
+            var top = screen.y;
+            var bottom = screen.y + screen.height;
+
+            if (firstScreen) {
+                minX = left;
+                maxX = right;
+                minY = top;
+                maxY = bottom;
+                firstScreen = false;
+            } else {
+                if (left < minX) minX = left;
+                if (right > maxX) maxX = right;
+                if (top < minY) minY = top;
+                if (bottom > maxY) maxY = bottom;
+            }
         }
         
         screenGeometries = geometries;
+        desktopMinX = minX;
+        desktopMinY = minY;
+        totalDesktopWidth = maxX - minX;
+        totalDesktopHeight = maxY - minY;
     }
     
-    /**
-     * Get cached geometry for a specific screen by name.
-     * Returns a geometry object with x, y, width, height, and name.
-     * Falls back to default 1920x1080 geometry if screen not found.
-     * 
-     * @param screenName - The name/identifier of the screen
-     * @returns Object with x, y, width, height, name properties
-     */
     function getGeometry(screenName) {
         return screenGeometries[screenName] || {
             x: 0,
@@ -63,16 +68,58 @@ Singleton {
         };
     }
     
-    // Calculate geometry on service initialization
+    function calculateScreenPositioning(sourceWidth, sourceHeight, screenX, screenY) {
+        if (sourceWidth <= 0 || sourceHeight <= 0) {
+            return { scale: 1, x: 0, y: 0, scaledWidth: 0, scaledHeight: 0 };
+        }
+
+        var scaleX = totalDesktopWidth / sourceWidth;
+        var scaleY = totalDesktopHeight / sourceHeight;
+        var scale = Math.max(scaleX, scaleY);
+
+        var scaledWidth = sourceWidth * scale;
+        var scaledHeight = sourceHeight * scale;
+
+        var imageOffsetX = (totalDesktopWidth - scaledWidth) / 2;
+        var imageOffsetY = (totalDesktopHeight - scaledHeight) / 2;
+
+        var finalX = imageOffsetX - (screenX - desktopMinX);
+        var finalY = imageOffsetY - (screenY - desktopMinY);
+
+        return {
+            scale: scale,
+            x: finalX,
+            y: finalY,
+            scaledWidth: scaledWidth,
+            scaledHeight: scaledHeight
+        };
+    }
+    
     Component.onCompleted: {
         recalculate();
     }
     
-    // Recalculate when screens are added, removed, or reconfigured
     Connections {
         target: Quickshell
         
         function onScreensChanged() {
+            root.recalculate();
+        }
+    }
+
+    Connections {
+        target: HyprStats
+
+        function onMonitorConfigChanged(eventName) {
+            delayedRecalculateTimer.restart();
+        }
+    }
+
+    Timer {
+        id: delayedRecalculateTimer
+        interval: 100
+        repeat: false
+        onTriggered: {
             root.recalculate();
         }
     }
