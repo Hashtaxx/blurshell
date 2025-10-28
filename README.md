@@ -9,7 +9,7 @@
 https://github.com/user-attachments/assets/77173184-023a-4a05-9790-f767839d06a9
 
 
-**Version:** 0.1.0
+**Version:** 0.1.2
 
 > **Note:** This shell was designed and tested primarily on a triple 2K monitor setup (three 2560x1440 displays). It should still function correctly on smaller or single-monitor setups, but some configuration on spacings may be needed.
 
@@ -345,9 +345,9 @@ Replace `5` with your preferred workspace number.
 
 ### How can I add blur effect to other windows as well.
 
-To add blur effects to other windows, enable transparency and blur in each application's settings if available. 
-For Zen browser, activate the "Transparent Zen Mod" in its settings. 
-For Zed code editor, select your favorite color scheme and adjust opacity in its preferences. 
+To add blur effects to other windows, enable transparency and blur in each application's settings if available.
+For Zen browser, activate the "Transparent Zen Mod" in its settings.
+For Zed code editor, select your favorite color scheme and adjust opacity in its preferences.
 For GTK apps, use a transparent theme or manually edit the CSS files (e.g., `~/.config/gtk-3.0/gtk.css`) to set a semi-transparent background and blur effect.
 
 ### I would love to use this shell config, but a must-have feature is missing.

@@ -34,6 +34,24 @@ Item {
 
     // Cache screen geometry from service (screen might not be in geometry cache on first access, use fallback)
     property var screenGeom: screenInfo ? ScreenGeometry.getGeometry(screenInfo.name) : { x: 0, y: 0, width: 1920, height: 1080 }
+    
+    // Update screenGeom when screenInfo becomes available
+    onScreenInfoChanged: {
+        if (screenInfo) {
+            screenGeom = ScreenGeometry.getGeometry(screenInfo.name);
+        }
+    }
+    
+    // Reactive updates when screen geometries change
+    Connections {
+        target: ScreenGeometry
+        
+        function onScreenGeometriesChanged() {
+            if (root.screenInfo) {
+                root.screenGeom = ScreenGeometry.getGeometry(root.screenInfo.name);
+            }
+        }
+    }
 
     // ============ WALLPAPER BACKGROUND ============
     // Stretched and blurred wallpaper with darkening overlay for all monitors
@@ -210,6 +228,9 @@ Item {
     // ============ INITIALIZATION ============
     // Ensure password input has focus when component is fully loaded
     Component.onCompleted: {
+        if (screenInfo) {
+            screenGeom = ScreenGeometry.getGeometry(screenInfo.name);
+        }
         passwordInput.forceActiveFocus();
     }
 }

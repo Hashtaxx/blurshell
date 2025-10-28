@@ -46,8 +46,10 @@ Item {
     }
     
     // Recalculate when screen position changes
-    onScreenXChanged: { if (wallpaperImage.status === Image.Ready) imagePosition = calculatePosition(); }
-    onScreenYChanged: { if (wallpaperImage.status === Image.Ready) imagePosition = calculatePosition(); }
+    onScreenXChanged: imagePosition = calculatePosition()
+    onScreenYChanged: imagePosition = calculatePosition()
+    onScreenWidthChanged: imagePosition = calculatePosition()
+    onScreenHeightChanged: imagePosition = calculatePosition()
     
     // ============ WALLPAPER SOURCE ============
     readonly property string wallpaperUrl: WallpaperService.currentWallpaperPath ? "file://" + WallpaperService.currentWallpaperPath : ""
@@ -129,6 +131,14 @@ Item {
         
         function onWallpaperChanged() {
             // Image will recalculate on statusChanged when new image loads
+        }
+    }
+    
+    // ============ INITIALIZATION ============
+    Component.onCompleted: {
+        // Force initial calculation
+        if (wallpaperImage.status === Image.Ready) {
+            imagePosition = calculatePosition();
         }
     }
 }
